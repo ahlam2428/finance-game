@@ -7,7 +7,7 @@ from io import BytesIO
 # Page Configuration
 st.set_page_config(page_title="Strategic Investment Simulator", layout="wide")
 
-# Custom CSS for a professional look
+# Custom CSS for professional MIS look
 st.markdown("""
     <style>
     .main { background-color: #f8f9fa; }
@@ -16,14 +16,14 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# Initialize Session State
+# Initialize Session State securely
 if 'step' not in st.session_state:
     st.session_state.step = 1
     st.session_state.balance = 1000000.0
     st.session_state.portfolio = {"Stocks": 0, "Bonds": 0, "Gold": 0}
-    st.session_state.history = [1000000.0]
+    st.session_state.history = [1000000.0]  # Initialize with starting capital
     st.session_state.prices = {"Stocks": 200.0, "Bonds": 100.0, "Gold": 1800.0}
-    st.session_state.event = "Game Started: Allocate your capital wisely."
+    st.session_state.event = "Market Initialized: Define your strategy to begin."
 
 # Market Logic Engine
 def next_turn():
@@ -38,7 +38,7 @@ def next_turn():
     selected_event = np.random.choice(events)
     st.session_state.event = selected_event["msg"]
     
-    # Update Asset Prices based on the event
+    # Update Asset Prices
     st.session_state.prices["Stocks"] *= (1 + selected_event["stocks"])
     st.session_state.prices["Bonds"] *= (1 + selected_event["bonds"])
     st.session_state.prices["Gold"] *= (1 + selected_event["gold"])
@@ -51,17 +51,20 @@ def next_turn():
     st.session_state.history.append(current_value)
     st.session_state.step += 1
 
-# Header Section
+# Header
 st.title("📊 Strategic Investment Simulator")
 st.subheader("Master's Level Financial Decision-Making Tool")
 st.divider()
 
-# Dashboard Metrics
+# Dashboard Metrics with Error Handling
 st.info(f"📅 **Round:** {st.session_state.step} of 5 | 📢 **Market News:** {st.session_state.event}")
 
 m1, m2, m3 = st.columns(3)
 m1.metric("Cash Liquidity", f"${st.session_state.balance:,.2f}")
-m2.metric("Total Portfolio Value", f"${st.session_state.history[-1]:,.2f}")
+
+# Safe check for portfolio value display
+display_value = st.session_state.history[-1] if st.session_state.history else 1000000.0
+m2.metric("Total Portfolio Value", f"${display_value:,.2f}")
 m3.metric("Step Progress", f"{st.session_state.step}/5")
 
 # Game Phase
@@ -79,7 +82,6 @@ if st.session_state.step <= 5:
             if s_pct + b_pct + g_pct > 100:
                 st.error("Invalid Allocation: Total percentage exceeds 100%!")
             else:
-                # Rebalance Portfolio
                 total_wealth = st.session_state.balance + sum(q * st.session_state.prices[a] for a, q in st.session_state.portfolio.items())
                 st.session_state.portfolio["Stocks"] = (total_wealth * (s_pct/100)) / st.session_state.prices["Stocks"]
                 st.session_state.portfolio["Bonds"] = (total_wealth * (b_pct/100)) / st.session_state.prices["Bonds"]
@@ -91,7 +93,6 @@ if st.session_state.step <= 5:
 # Results Phase
 else:
     st.success("🎯 Simulation Complete! Review the Financial Performance Analysis below.")
-    
     final_val = st.session_state.history[-1]
     roi = ((final_val - 1000000) / 1000000) * 100
     volatility = np.std(st.session_state.history)
@@ -99,33 +100,25 @@ else:
 
     r1, r2, r3 = st.columns(3)
     r1.metric("Final ROI", f"{roi:.2f}%")
-    r2.metric("Risk Level (Volatility)", f"{volatility:,.0f}")
-    r3.metric("Efficiency (Sharpe Ratio)", f"{sharpe:.2f}")
+    r2.metric("Risk Level", f"{volatility:,.0f}")
+    r3.metric("Sharpe Ratio", f"{sharpe:.2f}")
 
-    # Performance Graph
     fig = go.Figure()
     fig.add_trace(go.Scatter(y=st.session_state.history, mode='lines+markers', line=dict(color='#1E3A8A', width=4)))
     fig.update_layout(title="Portfolio Equity Curve", xaxis_title="Round", yaxis_title="Net Worth ($)")
     st.plotly_chart(fig, use_container_width=True)
 
-    # Excel Report for Instructor
+    # Export Excel Data
     report_df = pd.DataFrame({
         "Metric": ["Final Net Worth", "Total ROI (%)", "Volatility", "Sharpe Ratio"],
         "Result": [f"${final_val:,.2f}", f"{roi:.2f}%", round(volatility, 2), round(sharpe, 2)]
     })
-    
     buffer = BytesIO()
     with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
-        report_df.to_excel(writer, index=False, sheet_name='Performance_Report')
-    
-    st.download_button(
-        label="📥 Download Performance Report (Excel)",
-        data=buffer.getvalue(),
-        file_name="student_assessment.xlsx",
-        mime="application/vnd.ms-excel"
-    )
+        report_df.to_excel(writer, index=False)
+    st.download_button("📥 Download Performance Report", data=buffer.getvalue(), file_name="assessment.xlsx")
 
     if st.button("Restart Simulation"):
-        for key in st.session_state.keys():
+        for key in list(st.session_state.keys()):
             del st.session_state[key]
         st.rerun()
