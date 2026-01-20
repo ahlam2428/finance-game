@@ -5,32 +5,49 @@ import yfinance as yf
 import plotly.graph_objects as go
 import requests
 
-# --- 1. إعدادات الصفحة والتصميم (Navy & Gold Theme) ---
-st.set_page_config(page_title="Finance Strategy Lab", layout="wide")
+# --- 1. إعدادات الصفحة والتصميم (High-Contrast Light Theme) ---
+st.set_page_config(page_title="Investment Strategy Lab", layout="wide")
 
 st.markdown("""
     <style>
-    /* تغيير الخلفية للون نيفي غامق */
-    .stApp { background-color: #001f3f; color: #ffffff; }
+    /* خلفية بيضاء وخطوط سوداء واضحة */
+    .stApp { background-color: #FFFFFF; color: #000000; }
     
-    /* تنسيق بطاقات الأرقام */
-    [data-testid="stMetricValue"] { color: #FFD700 !important; font-weight: 800; font-size: 2.5rem !important; }
+    /* تنسيق بطاقات الأرقام (خلفية فاتحة وحدود واضحة) */
+    [data-testid="stMetricValue"] { color: #0044CC !important; font-weight: 900; font-size: 2.8rem !important; }
     div[data-testid="stMetric"] { 
-        background-color: #003366; padding: 25px; border-radius: 15px; border: 1px solid #FFD700;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        background-color: #F8F9FA; 
+        padding: 25px; 
+        border-radius: 12px; 
+        border: 2px solid #DEE2E6;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     }
     
-    /* تنسيق الأزرار */
-    .stButton>button { 
-        background-color: #FFD700; color: #001f3f; border-radius: 10px; 
-        font-weight: bold; border: none; height: 3.5em; width: 100%; font-size: 1.1rem;
+    /* نصوص العناوين سوداء تماماً وواضحة */
+    h1, h2, h3, h4, p, label { 
+        color: #000000 !important; 
+        font-family: 'Arial', sans-serif; 
+        font-weight: bold !important;
     }
-    .stButton>button:hover { background-color: #e6c200; color: #001f3f; }
 
-    /* التنبيهات والعناوين */
-    .stAlert { background-color: #003366; color: #ffffff; border: 1px solid #FFD700; }
-    h1, h2, h3 { color: #FFD700 !important; font-family: 'serif'; }
-    .stSlider > div > div > div > div { background-color: #FFD700; }
+    /* تنسيق الأزرار (أزرق ملكي مع خط أبيض عريض) */
+    .stButton>button { 
+        background-color: #0044CC; 
+        color: #FFFFFF; 
+        border-radius: 8px; 
+        font-weight: 900; 
+        border: none; 
+        height: 3.5em; 
+        width: 100%; 
+        font-size: 1.2rem;
+    }
+    .stButton>button:hover { background-color: #003399; color: #FFFFFF; }
+
+    /* تحسين وضوح السلايدر (المزلاق) */
+    .stSlider > div > div > div > div { background-color: #0044CC; }
+    
+    /* تنسيق صناديق التنبيه */
+    .stAlert { background-color: #E7F0FF; color: #000000; border: 1px solid #0044CC; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -53,11 +70,10 @@ if 'step' not in st.session_state:
     st.session_state.update({
         'step': 1, 'balance': 1000000.0, 'history': [1000000.0],
         'portfolio': {"Equities": 0, "Fixed Income": 0, "Commodities": 0},
-        'prices': live_prices, 'event': "Market Terminal Online. Real-time data synced."
+        'prices': live_prices, 'event': "Market Terminal Ready. Live data connected."
     })
 
 def simulate_market_move():
-    # محاكاة حركة بناءً على تذبذب الأصول
     vol = {"Equities": 0.05, "Fixed Income": 0.015, "Commodities": 0.03}
     for asset in st.session_state.prices:
         change = np.random.normal(0.002, vol[asset])
@@ -68,28 +84,28 @@ def simulate_market_move():
     st.session_state.step += 1
 
 # --- 4. واجهة المستخدم ---
-st.title("🏛️ Investment Strategy & Portfolio Lab")
-st.markdown("### Graduate Level Simulation | Real-Time Markets")
+st.title("🏛️ Portfolio Strategy Simulation")
+st.write("Professional Decision Support Tool for Finance Students")
 
 if st.session_state.step <= 5:
-    st.info(f"📅 **Round:** {st.session_state.step} of 5 | 📢 **News:** {st.session_state.event}")
+    st.info(f"📅 Round: {st.session_state.step} of 5 | 📢 Status: {st.session_state.event}")
     
     col1, col2, col3 = st.columns(3)
     col1.metric("AVAILABLE CASH", f"${st.session_state.balance:,.0f}")
-    col2.metric("PORTFOLIO VALUE (AUM)", f"${st.session_state.history[-1]:,.0f}")
+    col2.metric("PORTFOLIO VALUE", f"${st.session_state.history[-1]:,.0f}")
     roi = ((st.session_state.history[-1] - 1000000)/1000000)*100
     col3.metric("CURRENT ROI", f"{roi:.2f}%")
 
     with st.form("trade_form"):
-        st.subheader("🛠️ Strategic Asset Allocation")
+        st.subheader("🛠️ Portfolio Rebalancing")
         c1, c2, c3 = st.columns(3)
         s = c1.slider("Equities (SPY) %", 0, 100, 0)
         b = c2.slider("Fixed Income (TLT) %", 0, 100, 0)
         g = c3.slider("Commodities (GLD) %", 0, 100, 0)
         
-        if st.form_submit_button("EXECUTE PORTFOLIO REBALANCING"):
+        if st.form_submit_button("CONFIRM ALLOCATION"):
             if s + b + g > 100:
-                st.error("Total allocation cannot exceed 100%!")
+                st.error("Error: Total allocation cannot exceed 100%!")
             else:
                 total_w = st.session_state.history[-1]
                 st.session_state.portfolio["Equities"] = (total_w * (s/100)) / st.session_state.prices["Equities"]
@@ -99,46 +115,48 @@ if st.session_state.step <= 5:
                 simulate_market_move()
                 st.rerun()
 
-# --- 5. النتائج النهائية وإصلاح الرسم البياني ---
+# --- 5. النتائج النهائية والرسم البياني الواضح ---
 else:
     st.success("🎯 Simulation Completed.")
     final_val = st.session_state.history[-1]
     total_roi = ((final_val - 1000000)/1000000)*100
     
-    # إصلاح الرسم البياني (تم ضبط المحاور لتناسب البيانات)
+    # رسم بياني بخلفية بيضاء وخطوط واضحة جداً
     fig = go.Figure()
     fig.add_trace(go.Scatter(
         x=list(range(len(st.session_state.history))), 
         y=st.session_state.history, 
         mode='lines+markers', 
-        line=dict(color='#FFD700', width=5),
-        fill='tozeroy',
-        fillcolor='rgba(255, 215, 0, 0.1)'
+        line=dict(color='#0044CC', width=6),
+        marker=dict(size=12, color='#0044CC'),
+        name='Portfolio Value'
     ))
     fig.update_layout(
-        title="Portfolio Value Performance",
-        xaxis=dict(title="Trading Round", tickmode='linear', dtick=1),
-        yaxis=dict(title="Net Worth ($)", autorange=True), # تفعيل الضبط التلقائي
-        template="plotly_dark",
-        paper_bgcolor='rgba(0,0,0,0)',
-        plot_bgcolor='rgba(0,0,0,0)'
+        title=dict(text="Investment Performance History", font=dict(size=24, color='black')),
+        xaxis=dict(title="Trading Round", tickmode='linear', dtick=1, gridcolor='#E5E5E5', tickfont=dict(color='black', size=14)),
+        yaxis=dict(title="Value ($)", autorange=True, gridcolor='#E5E5E5', tickfont=dict(color='black', size=14)),
+        plot_bgcolor='white',
+        paper_bgcolor='white',
+        margin=dict(l=40, r=40, t=60, b=40)
     )
     st.plotly_chart(fig, use_container_width=True)
 
+    st.write("---")
     c_res1, c_res2 = st.columns(2)
     with c_res1:
-        st.metric("FINAL AUM", f"${final_val:,.2f}")
-        st.metric("TOTAL ROI", f"{total_roi:.2f}%")
-        if st.button("🔄 Restart Simulation"):
+        st.write("### 📊 Summary Statistics")
+        st.metric("FINAL VALUE", f"${final_val:,.2f}")
+        st.metric("NET RETURN", f"{total_roi:.2f}%")
+        if st.button("🔄 Restart Game"):
             st.session_state.clear()
             st.rerun()
     
     with c_res2:
-        st.write("### 📧 Submission to Instructor")
-        name = st.text_input("Student Name:")
+        st.write("### 📧 Instructor Submission")
+        name = st.text_input("Student Full Name:")
         email = st.text_input("Instructor Email:")
-        if st.button("Send Audited Results"):
+        if st.button("Submit My Results"):
             if name and "@" in email:
                 requests.post(f"https://formsubmit.co/ajax/{email}", data={"Student": name, "ROI": f"{total_roi:.2f}%", "AUM": f"${final_val:,.2f}"})
                 st.balloons()
-                st.success("Results Dispatched Successfully.")
+                st.success("Report sent successfully!")
