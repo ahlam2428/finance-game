@@ -25,7 +25,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- 2. جلب بيانات السوق (الأساس) ---
+# --- 2. جلب بيانات السوق ---
 @st.cache_data(ttl=3600)
 def get_live_prices():
     try:
@@ -45,12 +45,11 @@ if 'step' not in st.session_state:
         'step': 1, 'balance': 1000000.0, 'history': [1000000.0],
         'portfolio': {"Equities": 0, "Fixed Income": 0, "Commodities": 0},
         'prices': live_prices,
-        'event': "📢 Welcome, Trader. Deploy your capital to begin."
+        'event': "📢 Welcome, Trader. Hover over items to see descriptions."
     })
 
-# --- 4. محرك الأخبار العشوائية وتأثيرها على السوق ---
+# --- 4. محرك الأخبار ---
 def process_turn():
-    # قائمة الأخبار وتأثيرها (Multiplier) على الأسعار الحقيقية
     scenarios = [
         {"msg": "🚀 AI BREAKTHROUGH: Tech sector leads a massive market rally!", "e": 0.12, "f": 0.01, "c": -0.05},
         {"msg": "⚠️ GEOPOLITICAL TENSION: Investors rush to Gold as a safe haven.", "e": -0.08, "f": 0.04, "c": 0.15},
@@ -58,16 +57,11 @@ def process_turn():
         {"msg": "📉 GLOBAL RECESSION FEARS: Consumer spending drops sharply.", "e": -0.15, "f": 0.06, "c": 0.08},
         {"msg": "⚡ ENERGY CRISIS: Oil and Commodity prices skyrocket.", "e": -0.04, "f": -0.02, "c": 0.18}
     ]
-    
     selected = np.random.choice(scenarios)
     st.session_state.event = selected["msg"]
-    
-    # تحديث الأسعار بناءً على الخبر
     st.session_state.prices["Equities"] *= (1 + selected["e"])
     st.session_state.prices["Fixed Income"] *= (1 + selected["f"])
     st.session_state.prices["Commodities"] *= (1 + selected["c"])
-    
-    # حساب القيمة الإجمالية
     total_val = st.session_state.balance + sum(q * st.session_state.prices[a] for a, q in st.session_state.portfolio.items())
     st.session_state.history.append(total_val)
     st.session_state.step += 1
@@ -76,28 +70,29 @@ def process_turn():
 st.title("🏛️ Professional Investment Strategy Lab")
 
 if st.session_state.step <= 5:
-    # عرض الخبر بشكل بارز جداً
     st.info(f"📅 Round: {st.session_state.step} of 5 | {st.session_state.event}")
     
     col1, col2, col3 = st.columns(3)
-    col1.metric("AVAILABLE CASH", f"${st.session_state.balance:,.0f}")
-    col2.metric("PORTFOLIO VALUE (AUM)", f"${st.session_state.history[-1]:,.0f}")
+    # إضافة Tooltips للمقاييس الرئيسية
+    col1.metric("AVAILABLE CASH", f"${st.session_state.balance:,.0f}", help="The liquid capital you have left to invest in this round.")
+    col2.metric("PORTFOLIO VALUE (AUM)", f"${st.session_state.history[-1]:,.0f}", help="Total Assets Under Management: The sum of your cash and current market value of your investments.")
     roi = ((st.session_state.history[-1] - 1000000)/1000000)*100
-    col3.metric("CURRENT ROI", f"{roi:.2f}%")
+    col3.metric("CURRENT ROI", f"{roi:.2f}%", help="Return on Investment: Percentage of profit or loss relative to your starting 1 Million USD.")
 
     with st.form("trading_panel"):
         st.write("### 🛠️ Portfolio Allocation")
         c1, c2, c3 = st.columns(3)
-        s_pct = c1.slider("Equities (Stocks) %", 0, 100, 0)
-        b_pct = c2.slider("Fixed Income (Bonds) %", 0, 100, 0)
-        g_pct = c3.slider("Commodities (Gold) %", 0, 100, 0)
         
-        if st.form_submit_button("EXECUTE TRADES"):
+        # إضافة Tooltips للسلايدرز
+        s_pct = c1.slider("Equities (Stocks) %", 0, 100, 0, help="High risk/High reward. Represented by SPY (S&P 500 ETF). Best for growth periods.")
+        b_pct = c2.slider("Fixed Income (Bonds) %", 0, 100, 0, help="Lower risk. Represented by TLT (20+ Year Treasury Bonds). Good for stability.")
+        g_pct = c3.slider("Commodities (Gold) %", 0, 100, 0, help="Inflation hedge. Represented by GLD (Gold Shares). Safe haven during crises.")
+        
+        if st.form_submit_button("EXECUTE TRADES", help="Click to lock in your allocation and see how the market reacts to the next news event."):
             if s_pct + b_pct + g_pct > 100:
-                st.error("Error: Total allocation cannot exceed 100%.")
+                st.error("Error: Total allocation cannot exceed 100%. Adjust your percentages.")
             else:
                 current_w = st.session_state.history[-1]
-                # توزيع المحفظة
                 st.session_state.portfolio["Equities"] = (current_w * (s_pct/100)) / st.session_state.prices["Equities"]
                 st.session_state.portfolio["Fixed Income"] = (current_w * (b_pct/100)) / st.session_state.prices["Fixed Income"]
                 st.session_state.portfolio["Commodities"] = (current_w * (g_pct/100)) / st.session_state.prices["Commodities"]
@@ -105,13 +100,12 @@ if st.session_state.step <= 5:
                 process_turn()
                 st.rerun()
 
-# --- 6. عرض النتائج النهائية والرسم البياني المحسن ---
+# --- 6. النتائج النهائية ---
 else:
-    st.success("🎯 Simulation Completed. Review your results below.")
+    st.success("🎯 Simulation Completed.")
     final_aum = st.session_state.history[-1]
     total_roi = ((final_aum - 1000000)/1000000)*100
     
-    # الرسم البياني عالي الوضوح
     fig = go.Figure()
     fig.add_trace(go.Scatter(
         x=list(range(len(st.session_state.history))), 
@@ -123,26 +117,27 @@ else:
         fillcolor='rgba(0, 68, 204, 0.1)'
     ))
     fig.update_layout(
-        title="Portfolio Value History",
-        xaxis=dict(title="Round", tickmode='linear', dtick=1, gridcolor='#EEEEEE'),
-        yaxis=dict(title="Value ($)", autorange=True, gridcolor='#EEEEEE'),
+        title="Portfolio Value History (Performance Chart)",
+        xaxis=dict(title="Trading Rounds", tickmode='linear', dtick=1),
+        yaxis=dict(title="Value in USD", autorange=True),
         plot_bgcolor='white', paper_bgcolor='white'
     )
     st.plotly_chart(fig, use_container_width=True)
 
     c_res1, c_res2 = st.columns(2)
     with c_res1:
+        st.write("### 📊 Final Assessment")
         st.metric("FINAL VALUE", f"${final_aum:,.2f}")
         st.metric("TOTAL ROI", f"{total_roi:.2f}%")
-        if st.button("🔄 Restart & Try Again"):
+        if st.button("🔄 Restart & Try Again", help="Reset all data and start a new 5-round simulation."):
             st.session_state.clear()
             st.rerun()
     
     with c_res2:
-        st.write("### 📧 Send Audited Results")
-        s_name = st.text_input("Enter Your Full Name:")
-        i_email = st.text_input("Instructor Email Address:")
-        if st.button("Submit Report"):
+        st.write("### 📧 Official Submission")
+        s_name = st.text_input("Enter Your Full Name:", help="Used to identify your report in the instructor's inbox.")
+        i_email = st.text_input("Instructor Email:", help="The email address where the results will be sent.")
+        if st.button("Submit Report", help="Sends a secure summary of your performance to the instructor."):
             if s_name and "@" in i_email:
                 data = {"Student": s_name, "Final_AUM": f"${final_aum:,.2f}", "ROI": f"{total_roi:.2f}%"}
                 requests.post(f"https://formsubmit.co/ajax/{i_email}", data=data)
