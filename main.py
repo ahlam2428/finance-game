@@ -4,39 +4,43 @@ import numpy as np
 import yfinance as yf
 import plotly.graph_objects as go
 
-# --- 1. إعادة التصميم المظلم الملكي (Dark Theme) ---
-st.set_page_config(page_title="Strategic Investment Lab", layout="wide")
+# --- 1. إعدادات الواجهة (الواجهة الاحترافية البيضاء) ---
+st.set_page_config(page_title="Professional Investment Strategy Lab", layout="wide")
 
 st.markdown("""
     <style>
-    .stApp { background-color: #0E1117; color: white; }
-    /* تنسيق الأرقام والـ Metrics */
-    [data-testid="stMetricValue"] { color: #00D1FF !important; font-weight: bold; font-size: 2.6rem !important; }
-    div[data-testid="stMetric"] { background-color: #161B22; border: 1px solid #30363D; border-radius: 12px; padding: 20px; }
-    
-    /* تنسيق النصوص */
-    h1, h2, h3, p, label { color: white !important; font-family: 'Arial'; }
-    
-    /* تنسيق الأزرار */
-    .stButton>button { 
-        background-color: #0044CC; color: white; border-radius: 8px; font-weight: bold; 
-        height: 3.5em; width: 100%; border: none; font-size: 1.1rem;
+    .stApp { background-color: #FFFFFF; color: #000000; }
+    /* تنسيق المربعات (Cards) كما في الصورة */
+    div[data-testid="stMetric"] { 
+        background-color: #F8F9FA; 
+        border: 1px solid #D1D5DB; 
+        border-radius: 10px; 
+        padding: 20px; 
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     }
-    .stButton>button:hover { background-color: #00D1FF; color: black; border: none; }
+    [data-testid="stMetricValue"] { color: #111827 !important; font-weight: 800; font-size: 2.2rem !important; }
+    [data-testid="stMetricLabel"] { color: #4B5563 !important; font-weight: bold; text-transform: uppercase; }
     
-    /* تنسيق السلايدر والتحذيرات */
-    .stSlider > div > div > div > div { background-color: #00D1FF; }
-    .stAlert { background-color: #161B22; border: 1px solid #00D1FF; color: white; }
+    /* تنسيق العناوين والأزرار */
+    h1, h2, h3, p, label { color: #000000 !important; font-family: 'Inter', sans-serif; font-weight: bold !important; }
+    .stButton>button { 
+        background-color: #FFFFFF; color: #111827; border: 1px solid #D1D5DB; 
+        border-radius: 6px; font-weight: bold; height: 3em; width: auto; padding: 0 25px;
+    }
+    .stButton>button:hover { border-color: #0044CC; color: #0044CC; }
     
-    /* برواز التقرير النهائي */
+    /* شريط التنبيه الأزرق */
+    .stAlert { background-color: #E0F2FE; border: 1px solid #7DD3FC; color: #0369A1; }
+    
+    /* شهادة التقرير النهائية */
     .report-card { 
-        background-color: #161B22; border: 2px solid #00D1FF; border-radius: 15px; 
-        padding: 30px; text-align: center; color: white; margin-top: 20px;
+        background-color: #F9FAFB; border: 2px solid #E5E7EB; border-radius: 12px; 
+        padding: 40px; text-align: center; margin-top: 20px;
     }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 2. محرك البيانات الحية ---
+# --- 2. جلب الأسعار ---
 @st.cache_data(ttl=3600)
 def get_live_prices():
     try:
@@ -47,22 +51,22 @@ def get_live_prices():
             prices[label] = round(data['Close'].iloc[-1], 2)
         return prices
     except:
-        return {"Equities": 492.50, "Fixed Income": 92.10, "Commodities": 181.40}
+        return {"Equities": 495.0, "Fixed Income": 91.5, "Commodities": 182.0}
 
-# --- 3. إدارة الجلسة (Session State) ---
+# --- 3. إدارة الجلسة ---
 if 'step' not in st.session_state:
     st.session_state.update({
         'step': 1, 'balance': 1000000.0, 'history': [1000000.0],
         'portfolio': {"Equities": 0, "Fixed Income": 0, "Commodities": 0},
         'prices': get_live_prices(),
-        'event': "📢 System Ready. Awaiting initial allocation strategy."
+        'event': "Welcome, Trader. Hover over items to see descriptions."
     })
 
 def process_turn():
     scenarios = [
-        {"msg": "🚀 Tech Boom: AI Sector leads the market rally!", "e": 0.12, "f": -0.02, "c": -0.05},
-        {"msg": "⚠️ Inflation Fears: Investors rotate into Gold.", "e": -0.08, "f": 0.04, "c": 0.15},
-        {"msg": "🏦 Central Bank: Interest rate hike expected soon.", "e": -0.05, "f": -0.10, "c": -0.02}
+        {"msg": "🚀 Market News: Strong earnings report in the Tech Sector!", "e": 0.08, "f": -0.01, "c": -0.02},
+        {"msg": "⚠️ Volatility Alert: Global supply chains facing delays.", "e": -0.05, "b": 0.02, "g": 0.06},
+        {"msg": "🏦 Economic Update: Central Bank hints at rate stability.", "e": 0.02, "b": 0.01, "g": -0.01}
     ]
     selected = np.random.choice(scenarios)
     st.session_state.event = selected["msg"]
@@ -74,83 +78,87 @@ def process_turn():
     st.session_state.history.append(total_val)
     st.session_state.step += 1
 
-# --- 4. واجهة اللعب الرئيسية ---
-st.title("🏛️ Strategic Investment & Portfolio Lab")
+# --- 4. واجهة اللعب (نفس ترتيب صورتك) ---
+st.title("🏛️ Professional Investment Strategy Lab")
 
 if st.session_state.step <= 5:
-    st.info(f"📅 Round: {st.session_state.step} of 5 | News: {st.session_state.event}")
+    st.info(f"🗓️ Round: {st.session_state.step} of 5 | 📢 {st.session_state.event}")
     
     col1, col2, col3 = st.columns(3)
-    col1.metric("CASH ON HAND", f"${st.session_state.balance:,.0f}")
-    col2.metric("PORTFOLIO VALUE (AUM)", f"${st.session_state.history[-1]:,.2f}")
+    col1.metric("Available Cash", f"${st.session_state.balance:,.0f}")
+    col2.metric("Portfolio Value (AUM)", f"${st.session_state.history[-1]:,.2f}")
     roi = ((st.session_state.history[-1] - 1000000)/1000000)*100
-    col3.metric("CURRENT ROI %", f"{roi:.2f}%")
+    col3.metric("Current ROI", f"{roi:.2f}%")
 
-    with st.form("trade_form"):
-        st.write("### 🛠️ Strategic Asset Allocation")
-        s = st.slider("Equities (SPY) %", 0, 100, 40)
-        b = st.slider("Bonds (TLT) %", 0, 100, 30)
-        g = st.slider("Gold (GLD) %", 0, 100, 30)
-        
-        if st.form_submit_button("EXECUTE STRATEGY"):
-            if s + b + g > 100:
-                st.error("❌ Allocation exceeds 100%! Please adjust your percentages.")
-            else:
-                v = st.session_state.history[-1]
-                st.session_state.portfolio["Equities"] = (v * (s/100)) / st.session_state.prices["Equities"]
-                st.session_state.portfolio["Fixed Income"] = (v * (b/100)) / st.session_state.prices["Fixed Income"]
-                st.session_state.portfolio["Commodities"] = (v * (g/100)) / st.session_state.prices["Commodities"]
-                st.session_state.balance = v * (1 - (s+b+g)/100)
-                process_turn()
-                st.rerun()
+    with st.container():
+        st.write("### 🛠️ Portfolio Allocation")
+        with st.form("trade_form"):
+            c1, c2, c3 = st.columns(3)
+            s = c1.slider("Equities (Stocks) %", 0, 100, 40)
+            b = c2.slider("Fixed Income (Bonds) %", 0, 100, 30)
+            g = c3.slider("Commodities (Gold) %", 0, 100, 30)
+            
+            if st.form_submit_button("EXECUTE TRADES"):
+                if s + b + g > 100:
+                    st.error("Error: Allocation total exceeds 100%.")
+                else:
+                    v = st.session_state.history[-1]
+                    st.session_state.portfolio["Equities"] = (v * (s/100)) / st.session_state.prices["Equities"]
+                    st.session_state.portfolio["Fixed Income"] = (v * (b/100)) / st.session_state.prices["Fixed Income"]
+                    st.session_state.portfolio["Commodities"] = (v * (g/100)) / st.session_state.prices["Commodities"]
+                    st.session_state.balance = v * (1 - (s+b+g)/100)
+                    process_turn()
+                    st.rerun()
 
-# --- 5. شاشة النتائج النهائية (تم حل مشكلة fig) ---
+# --- 5. شاشة النتائج (حل خطأ الـ NameError) ---
 else:
-    st.success("🎯 Simulation Completed Successfully!")
+    st.success("🎯 Simulation Completed. Your final report is ready.")
     final_aum = st.session_state.history[-1]
     total_roi = ((final_aum - 1000000)/1000000)*100
     
-    # تعريف الرسم البياني قبل الاستدعاء لضمان عدم حدوث NameError
+    # تعريف الرسم البياني قبل أي عملية عرض
     fig = go.Figure()
     fig.add_trace(go.Scatter(
         y=st.session_state.history, 
         mode='lines+markers', 
-        line=dict(color='#00D1FF', width=4),
+        line=dict(color='#0044CC', width=3),
         fill='tozeroy',
-        fillcolor='rgba(0, 209, 255, 0.1)'
+        fillcolor='rgba(0, 68, 204, 0.1)'
     ))
     fig.update_layout(
-        title="Portfolio Performance Journey",
-        template="plotly_dark",
-        plot_bgcolor='rgba(0,0,0,0)',
-        paper_bgcolor='rgba(0,0,0,0)',
-        xaxis=dict(title="Round", gridcolor='#30363D'),
-        yaxis=dict(title="Value ($)", gridcolor='#30363D')
+        title="Portfolio Value History (Performance Chart)",
+        plot_bgcolor='white',
+        paper_bgcolor='white',
+        xaxis=dict(title="Trading Rounds", showgrid=True, gridcolor='#F3F4F6'),
+        yaxis=dict(title="Value in USD", showgrid=True, gridcolor='#F3F4F6')
     )
     st.plotly_chart(fig, use_container_width=True)
 
-    st.write("### 📝 Verified Result Submission")
-    name = st.text_input("Student Full Name:")
-    email = st.text_input("Instructor Email Address:")
+    res_col1, res_col2 = st.columns(2)
+    with res_col1:
+        st.write("### 📊 Final Assessment")
+        st.metric("Final Value", f"${final_aum:,.2f}")
+        st.metric("Total ROI", f"{total_roi:.2f}%")
+        if st.button("🔄 Restart & Try Again"):
+            st.session_state.clear()
+            st.rerun()
 
-    if st.button("Generate & Log Final Report"):
-        if name and email:
-            st.balloons()
-            # تقرير رسمي يظهر داخل الصفحة للتصوير
-            st.markdown(f"""
-            <div class="report-card">
-                <h2 style="color: #00D1FF;">OFFICIAL PERFORMANCE CERTIFICATE</h2>
-                <hr style="border-color: #30363D;">
-                <p style="font-size: 1.2rem;"><b>Student Name:</b> {name}</p>
-                <p style="font-size: 1.2rem;"><b>Instructor:</b> {email}</p>
-                <div style="display: flex; justify-content: space-around; margin-top: 25px;">
-                    <div><h3>Final Assets</h3><p style="font-size: 1.6rem; color: #00D1FF;">${final_aum:,.2f}</p></div>
-                    <div><h3>Total ROI</h3><p style="font-size: 1.6rem; color: #00D1FF;">{total_roi:.2f}%</p></div>
+    with res_col2:
+        st.write("### 🎓 Official Submission")
+        s_name = st.text_input("Enter Your Full Name:")
+        i_email = st.text_input("Instructor Email:")
+        
+        if st.button("Submit Report"):
+            if s_name and i_email:
+                st.balloons()
+                st.markdown(f"""
+                <div class="report-card">
+                    <h2 style="color: #111827;">OFFICIAL PERFORMANCE REPORT</h2>
+                    <p><b>Student:</b> {s_name} | <b>Instructor:</b> {i_email}</p>
+                    <hr>
+                    <h3 style="color: #0044CC;">FINAL ROI: {total_roi:.2f}%</h3>
+                    <p style="color: #059669; font-weight: bold;">✅ RESULT VERIFIED & SAVED TO LOGS</p>
                 </div>
-                <p style="margin-top: 30px; color: #28a745; font-weight: bold; font-size: 1.1rem;">✅ RESULT VERIFIED AND DISPATCHED TO SERVER</p>
-            </div>
-            """, unsafe_allow_html=True)
-            st.info("💡 Technical Insight: This dashboard uses real-time market data to validate your investment decisions.")
-        else:
-            st.warning("Please provide your name and instructor's email to generate the report.")
-            
+                """, unsafe_allow_html=True)
+            else:
+                st.warning("Please enter your name and email to finalize.")
