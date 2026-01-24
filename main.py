@@ -5,32 +5,30 @@ import yfinance as yf
 import plotly.graph_objects as go
 import requests
 
-# --- 1. إعدادات التصميم (عالية الوضوح - فاتح) ---
+# --- 1. إعدادات التصميم (ألوان واضحة واحترافية) ---
 st.set_page_config(page_title="Investment Strategy Lab", layout="wide")
 
 st.markdown("""
     <style>
     .stApp { background-color: #FFFFFF; color: #000000; }
-    [data-testid="stMetricValue"] { color: #0044CC !important; font-weight: 900; font-size: 2.8rem !important; }
+    [data-testid="stMetricValue"] { color: #0044CC !important; font-weight: 900; font-size: 2.5rem !important; }
     div[data-testid="stMetric"] { 
         background-color: #F8F9FA; padding: 20px; border-radius: 12px; border: 2px solid #DEE2E6;
     }
-    h1, h2, h3, h4, p, label { color: #000000 !important; font-weight: bold !important; font-family: 'Arial'; }
+    h1, h2, h3, p, label { color: #000000 !important; font-family: 'Arial'; font-weight: bold !important; }
     .stButton>button { 
-        background-color: #0044CC; color: #FFFFFF; border-radius: 8px; font-weight: 900; 
-        height: 3.5em; width: 100%; font-size: 1.2rem; border: none;
+        background-color: #0044CC; color: #FFFFFF; border-radius: 10px; font-weight: bold; 
+        height: 3.5em; width: 100%; font-size: 1.1rem; border: none;
     }
-    .stButton>button:hover { background-color: #003399; color: #FFFFFF; border: 1px solid #0044CC; }
+    .stButton>button:hover { background-color: #003399; color: white; }
     .stSlider > div > div > div > div { background-color: #0044CC; }
-    .stAlert { background-color: #E7F0FF; color: #000000; border: 1px solid #0044CC; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 2. جلب بيانات السوق الحية ---
+# --- 2. محرك جلب أسعار السوق الحقيقية ---
 @st.cache_data(ttl=3600)
 def get_live_prices():
     try:
-        # أسهم أمريكية (SPY)، سندات (TLT)، ذهب (GLD)
         tickers = {"Equities": "SPY", "Fixed Income": "TLT", "Commodities": "GLD"}
         prices = {}
         for label, ticker in tickers.items():
@@ -38,27 +36,24 @@ def get_live_prices():
             prices[label] = round(data['Close'].iloc[-1], 2)
         return prices
     except:
-        # أسعار احتياطية في حال تعطل الاتصال
         return {"Equities": 480.0, "Fixed Income": 95.0, "Commodities": 185.0}
 
-# --- 3. تهيئة حالة الجلسة ---
+# --- 3. إدارة الجلسة (Session State) ---
 if 'step' not in st.session_state:
     live_prices = get_live_prices()
     st.session_state.update({
         'step': 1, 'balance': 1000000.0, 'history': [1000000.0],
         'portfolio': {"Equities": 0, "Fixed Income": 0, "Commodities": 0},
         'prices': live_prices,
-        'event': "📢 System Ready. Welcome to the Investment Simulation."
+        'event': "📢 System Ready: Configure your portfolio to start."
     })
 
-# --- 4. محرك الأخبار والتحولات ---
+# --- 4. معالجة الجولات والأحداث الاقتصادية ---
 def process_turn():
     scenarios = [
-        {"msg": "🚀 TECH RALLY: AI breakthrough boosts Equity markets!", "e": 0.12, "f": -0.02, "c": -0.04},
-        {"msg": "⚠️ MARKET VOLATILITY: Investors move to Gold as a safe haven.", "e": -0.08, "f": 0.04, "c": 0.15},
-        {"msg": "🏦 RATE HIKE: Central banks raise rates; Bond prices fall.", "e": -0.05, "f": -0.10, "c": -0.02},
-        {"msg": "📉 RECESSION FEARS: Global demand slows down.", "e": -0.15, "f": 0.07, "c": 0.05},
-        {"msg": "🔥 COMMODITY SPIKE: Oil & Gold prices jump amid supply risks.", "e": -0.04, "f": -0.03, "c": 0.18}
+        {"msg": "🚀 TECH BOOM: AI innovations drive Equity prices higher!", "e": 0.12, "f": -0.02, "c": -0.04},
+        {"msg": "⚠️ MARKET VOLATILITY: Investors flee to Gold for safety.", "e": -0.08, "f": 0.05, "c": 0.15},
+        {"msg": "🏦 RATE HIKE: Central bank increases interest rates.", "e": -0.05, "f": -0.10, "c": -0.02}
     ]
     selected = np.random.choice(scenarios)
     st.session_state.event = selected["msg"]
@@ -66,99 +61,46 @@ def process_turn():
     st.session_state.prices["Fixed Income"] *= (1 + selected["f"])
     st.session_state.prices["Commodities"] *= (1 + selected["c"])
     
-    # حساب القيمة الإجمالية للمحفظة بعد الجولة
-    current_assets_val = sum(q * st.session_state.prices[a] for a, q in st.session_state.portfolio.items())
-    total_val = st.session_state.balance + current_assets_val
+    # حساب القيمة الإجمالية (كاش + استثمارات)
+    total_val = st.session_state.balance + sum(q * st.session_state.prices[a] for a, q in st.session_state.portfolio.items())
     st.session_state.history.append(total_val)
     st.session_state.step += 1
 
-# --- 5. واجهة اللعبة الرئيسية ---
-st.title("🏛️ Global Markets Simulation Terminal")
+# --- 5. واجهة المستخدم (UI) ---
+st.title("🏛️ Strategic Investment & Portfolio Lab")
 
 if st.session_state.step <= 5:
     st.info(f"📅 Round: {st.session_state.step} of 5 | News: {st.session_state.event}")
     
     col1, col2, col3 = st.columns(3)
-    col1.metric("CASH ON HAND", f"${st.session_state.balance:,.0f}", help="Total cash not yet invested.")
-    col2.metric("PORTFOLIO VALUE (AUM)", f"${st.session_state.history[-1]:,.0f}", help="Sum of cash and market value of your assets.")
+    col1.metric("CASH BALANCE", f"${st.session_state.balance:,.0f}")
+    col2.metric("PORTFOLIO VALUE (AUM)", f"${st.session_state.history[-1]:,.0f}")
     roi = ((st.session_state.history[-1] - 1000000)/1000000)*100
-    col3.metric("CURRENT ROI %", f"{roi:.2f}%", help="Performance relative to starting $1M.")
+    col3.metric("CURRENT ROI %", f"{roi:.2f}%")
 
-    with st.form("trade_form"):
-        st.write("### 🛠️ Strategic Asset Allocation")
-        c1, c2, c3 = st.columns(3)
-        s_pct = c1.slider("Equities (Stocks) %", 0, 100, 0, help="Growth assets (SPY ETF).")
-        b_pct = c2.slider("Fixed Income (Bonds) %", 0, 100, 0, help="Defensive assets (TLT ETF).")
-        g_pct = c3.slider("Commodities (Gold) %", 0, 100, 0, help="Inflation hedge (GLD ETF).")
+    with st.form("investment_form"):
+        st.write("### Adjust Asset Allocation")
+        s_pct = st.slider("Stocks (Equities) %", 0, 100, 40)
+        b_pct = st.slider("Bonds (Fixed Income) %", 0, 100, 30)
+        g_pct = st.slider("Gold (Commodities) %", 0, 100, 30)
         
-        if st.form_submit_button("EXECUTE ALLOCATION"):
+        if st.form_submit_button("EXECUTE STRATEGY"):
             if s_pct + b_pct + g_pct > 100:
-                st.error("❌ Allocation total exceeds 100%. Please adjust.")
+                st.error("Error: Total allocation exceeds 100%!")
             else:
-                current_total = st.session_state.history[-1]
-                st.session_state.portfolio["Equities"] = (current_total * (s_pct/100)) / st.session_state.prices["Equities"]
-                st.session_state.portfolio["Fixed Income"] = (current_total * (b_pct/100)) / st.session_state.prices["Fixed Income"]
-                st.session_state.portfolio["Commodities"] = (current_total * (g_pct/100)) / st.session_state.prices["Commodities"]
-                st.session_state.balance = current_total * (1 - (s_pct+b_pct+g_pct)/100)
+                total_w = st.session_state.history[-1]
+                st.session_state.portfolio["Equities"] = (total_w * (s_pct/100)) / st.session_state.prices["Equities"]
+                st.session_state.portfolio["Fixed Income"] = (total_w * (b_pct/100)) / st.session_state.prices["Fixed Income"]
+                st.session_state.portfolio["Commodities"] = (total_w * (g_pct/100)) / st.session_state.prices["Commodities"]
+                st.session_state.balance = total_w * (1 - (s_pct+b_pct+g_pct)/100)
                 process_turn()
                 st.rerun()
 
-# --- 6. صفحة النتائج النهائية ونظام الإرسال ---
+# --- 6. صفحة النتائج النهائية ونظام الإرسال (Web3Forms API) ---
 else:
-    st.success("🎯 Simulation Completed! Analyzing your results...")
     final_aum = st.session_state.history[-1]
     total_roi = ((final_aum - 1000000)/1000000)*100
+    st.success("🎯 Simulation Completed! Your final report is ready.")
     
-    # الرسم البياني للأداء
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(
-        x=list(range(len(st.session_state.history))), 
-        y=st.session_state.history, 
-        mode='lines+markers', 
-        line=dict(color='#0044CC', width=4),
-        fill='tozeroy', fillcolor='rgba(0, 68, 204, 0.1)'
-    ))
-    fig.update_layout(title="Portfolio Growth Journey", xaxis_title="Round", yaxis_title="Net Value ($)", plot_bgcolor='white')
-    st.plotly_chart(fig, use_container_width=True)
-
-    res1, res2 = st.columns(2)
-    with res1:
-        st.write("### 📈 Performance Summary")
-        st.metric("FINAL VALUE", f"${final_aum:,.2f}")
-        st.metric("TOTAL ROI", f"{total_roi:.2f}%")
-        if st.button("🔄 Try Again (Reset)"):
-            st.session_state.clear()
-            st.rerun()
-
-    with res2:
-        st.write("### 📧 Official Result Submission")
-        st.write("Instructor receives a verified performance table.")
-        name = st.text_input("Student Full Name:")
-        email = st.text_input("Instructor Email Address:")
-        
-        if st.button("Submit Audited Report"):
-            if name and email and "@" in email:
-                try:
-                    # البيانات المرسلة للخدمة
-                    payload = {
-                        "Student_Name": name,
-                        "Final_AUM": f"${final_aum:,.2f}",
-                        "Total_ROI": f"{total_roi:.2f}%",
-                        "_subject": f"Investment Lab Report: {name}",
-                        "_captcha": "false", # تخطي اختبار الروبوت للسرعة
-                        "_template": "table" # شكل الإيميل يكون جدول
-                    }
-                    # الإرسال المباشر
-                    response = requests.post(f"https://formsubmit.co/{email}", data=payload)
-                    
-                    if response.status_code == 200:
-                        st.balloons()
-                        st.success(f"Report sent to {email}")
-                        st.info("💡 TIP: If this is the first report, the instructor must click 'Activate' in the confirmation email.")
-                    else:
-                        st.error("System Busy. Please try again.")
-                except:
-                    st.error("Connection failed. Check your internet.")
-            else:
-                st.warning("Please provide both name and valid email.")
-                
+    # رسم بياني للأداء
+    fig
