@@ -4,59 +4,67 @@ import numpy as np
 import plotly.graph_objects as go
 import io
 
-# --- 1. التصميم الرسمي الأبيض (نفس الصور المرفقة) ---
+# --- 1. الإعدادات والواجهة الرسمية (نفس الصور السابقة) ---
 st.set_page_config(page_title="Professional Investment Strategy Lab", layout="wide")
 
 st.markdown("""
     <style>
     .stApp { background-color: #FFFFFF; color: #000000; }
+    /* تنسيق المربعات العلوية */
     div[data-testid="stMetric"] { 
         background-color: #F8F9FA; 
         border: 1px solid #D1D5DB; 
         border-radius: 10px; 
         padding: 20px; 
     }
-    [data-testid="stMetricValue"] { color: #111827 !important; font-weight: 800; }
+    [data-testid="stMetricValue"] { color: #111827 !important; font-weight: 800; font-size: 2.2rem !important; }
+    
+    /* تنسيق النصوص والأزرار */
+    h1, h2, h3, p, label { color: #000000 !important; font-family: 'Arial'; font-weight: bold !important; }
     .stButton>button { 
         background-color: #FFFFFF; color: #111827; border: 1px solid #D1D5DB; 
         border-radius: 6px; font-weight: bold; padding: 0.5em 2em;
     }
     .stButton>button:hover { border-color: #0044CC; color: #0044CC; }
-    .report-card { 
-        background-color: #F9FAFB; border: 2px solid #E5E7EB; border-radius: 12px; 
+    
+    /* تصميم شهادة النتائج */
+    .result-certificate { 
+        background-color: #F0F9FF; border: 2px solid #0044CC; border-radius: 15px; 
         padding: 30px; text-align: center; margin-top: 20px;
     }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 2. إدارة البيانات والجلسة ---
+# --- 2. وظائف التحكم (إعادة المحاولة) ---
 def reset_game():
     for key in list(st.session_state.keys()):
         del st.session_state[key]
     st.rerun()
 
+# --- 3. تهيئة البيانات والجلسة (إصلاح KeyError) ---
 if 'step' not in st.session_state:
     st.session_state.update({
         'step': 1, 'balance': 1000000.0, 'history': [1000000.0],
         'portfolio': {"Equities": 0, "Fixed Income": 0, "Commodities": 0},
         'prices': {"Equities": 500.0, "Fixed Income": 100.0, "Commodities": 200.0},
-        'event': "Welcome, Trader. Configure your strategy to begin."
+        'event': "📢 Welcome. Set your allocation to start Round 1."
     })
 
+# زر إعادة المحاولة في الشريط الجانبي
 with st.sidebar:
-    st.header("⚙️ Control Panel")
+    st.header("⚙️ Settings")
     if st.button("🔄 Restart Simulation"):
         reset_game()
 
 def process_turn():
     scenarios = [
-        {"msg": "🚀 Market News: Tech sector rally!", "e": 0.08, "f": -0.01, "c": -0.02},
-        {"msg": "⚠️ Volatility Alert: Gold is rising.", "e": -0.05, "f": 0.02, "c": 0.10},
-        {"msg": "🏦 Central Bank Update: Interest rates stable.", "e": 0.01, "f": 0.01, "c": -0.01}
+        {"msg": "🚀 Tech Boom: Equities are surging!", "e": 0.08, "f": -0.01, "c": -0.02},
+        {"msg": "⚠️ Inflation Alert: Commodities prices up.", "e": -0.05, "f": 0.03, "c": 0.12},
+        {"msg": "🏦 Neutral Policy: Market is stable.", "e": 0.01, "f": 0.01, "c": -0.01}
     ]
     sel = np.random.choice(scenarios)
     st.session_state.event = sel["msg"]
-    # تحديث الأسعار (تم توحيد المسميات لمنع KeyError)
+    # تحديث الأسعار بمسميات موحدة
     st.session_state.prices["Equities"] *= (1 + sel["e"])
     st.session_state.prices["Fixed Income"] *= (1 + sel["f"])
     st.session_state.prices["Commodities"] *= (1 + sel["c"])
@@ -65,11 +73,11 @@ def process_turn():
     st.session_state.history.append(total_val)
     st.session_state.step += 1
 
-# --- 3. الواجهة الرئيسية (Round 1-5) ---
+# --- 4. العرض الرئيسي للمحاكاة ---
 st.title("🏛️ Professional Investment Strategy Lab")
 
 if st.session_state.step <= 5:
-    st.info(f"Round: {st.session_state.step} of 5 | 📢 {st.session_state.event}")
+    st.info(f"📅 Round: {st.session_state.step} of 5 | {st.session_state.event}")
     
     c1, c2, c3 = st.columns(3)
     c1.metric("AVAILABLE CASH", f"${st.session_state.balance:,.0f}")
@@ -77,7 +85,7 @@ if st.session_state.step <= 5:
     roi = ((st.session_state.history[-1] - 1000000)/1000000)*100
     c3.metric("CURRENT ROI", f"{roi:.2f}%")
 
-    with st.form("trade_form"):
+    with st.form("trades"):
         st.write("### 🛠️ Portfolio Allocation")
         col_a, col_b, col_c = st.columns(3)
         s = col_a.slider("Equities %", 0, 100, 40)
@@ -86,9 +94,10 @@ if st.session_state.step <= 5:
         
         if st.form_submit_button("EXECUTE TRADES"):
             if s + b + g > 100:
-                st.error("Error: Allocation total exceeds 100%.")
+                st.error("Error: Total allocation exceeds 100%!")
             else:
                 v = st.session_state.history[-1]
+                # حساب الكميات بناءً على الأسعار الحالية
                 st.session_state.portfolio["Equities"] = (v * (s/100)) / st.session_state.prices["Equities"]
                 st.session_state.portfolio["Fixed Income"] = (v * (b/100)) / st.session_state.prices["Fixed Income"]
                 st.session_state.portfolio["Commodities"] = (v * (g/100)) / st.session_state.prices["Commodities"]
@@ -96,42 +105,63 @@ if st.session_state.step <= 5:
                 process_turn()
                 st.rerun()
 
-# --- 4. شاشة النتائج النهائية وإصدار التقارير ---
+# --- 5. شاشة النتائج النهائية وحفظ الملفات ---
 else:
-    st.success("🎯 Simulation Completed Successfully!")
+    st.success("🎯 Simulation Completed!")
     final_aum = st.session_state.history[-1]
     total_roi = ((final_aum - 1000000)/1000000)*100
     
-    # الرسم البياني (تم حل NameError)
-    fig = go.Figure(go.Scatter(y=st.session_state.history, mode='lines+markers', line=dict(color='#0044CC', width=3), fill='tozeroy'))
-    fig.update_layout(title="Performance History", plot_bgcolor='white', paper_bgcolor='white')
+    # الرسم البياني (إصلاح NameError)
+    fig = go.Figure(go.Scatter(
+        y=st.session_state.history, 
+        mode='lines+markers', 
+        line=dict(color='#0044CC', width=3),
+        fill='tozeroy', 
+        fillcolor='rgba(0, 68, 204, 0.1)'
+    ))
+    fig.update_layout(title="Portfolio Performance History", plot_bgcolor='white')
     st.plotly_chart(fig, use_container_width=True)
 
-    st.write("### 📝 Student Assessment & Submission")
-    name = st.text_input("Enter Student Full Name:")
-    instructor = st.text_input("Enter Instructor Email:")
+    st.write("### 📜 Save & Submit Results")
+    u_name = st.text_input("Enter Your Name:")
+    i_name = st.text_input("Enter Instructor Name:")
 
-    res_col1, res_col2 = st.columns(2)
+    res_c1, res_c2, res_c3 = st.columns(3)
     
-    with res_col1:
-        if st.button("🔄 Try Again to Improve ROI", use_container_width=True):
+    with res_c1:
+        if st.button("🔄 Try Again for Higher ROI", use_container_width=True):
             reset_game()
 
-    with res_col2:
-        if name and instructor:
-            # توليد ملف Excel
-            df_report = pd.DataFrame({
-                "Student Name": [name], "Instructor": [instructor],
-                "Final Portfolio": [f"${final_aum:,.2f}"], "Total ROI": [f"{total_roi:.2f}%"]
+    with res_c2:
+        if st.button("📋 View Official Certificate", use_container_width=True):
+            st.session_state.view_cert = True
+
+    with res_c3:
+        if u_name and i_name:
+            # ميزة تصدير إكسل
+            df = pd.DataFrame({
+                "Student": [u_name], "Instructor": [i_name],
+                "Final Value": [f"${final_aum:,.2f}"], "Total ROI": [f"{total_roi:.2f}%"]
             })
-            output = io.BytesIO()
-            with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-                df_report.to_excel(writer, index=False, sheet_name='Result')
+            buffer = io.BytesIO()
+            with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
+                df.to_excel(writer, index=False)
             
             st.download_button(
                 label="📥 Download Excel Report",
-                data=output.getvalue(),
-                file_name=f"Report_{name}.xlsx",
+                data=buffer.getvalue(),
+                file_name=f"Result_{u_name}.xlsx",
                 mime="application/vnd.ms-excel",
                 use_container_width=True
             )
+
+    if st.session_state.get('view_cert'):
+        st.markdown(f"""
+            <div class="result-certificate">
+                <h2 style="color: #0044CC;">Performance Certificate</h2>
+                <p>Student: <b>{u_name}</b> | Instructor: <b>{i_name}</b></p>
+                <hr>
+                <h3>Final Score (ROI): {total_roi:.2f}%</h3>
+                <p>Status: Verified & Ready for Submission ✅</p>
+            </div>
+        """, unsafe_allow_html=True)
